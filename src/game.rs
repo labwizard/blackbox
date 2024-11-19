@@ -4,6 +4,7 @@ use ::ggez::{
     event::EventHandler,
     input::keyboard::KeyInput
 };
+use ::std::time::Duration;
 use crate::*;
 use GameState::*;
 
@@ -31,6 +32,11 @@ pub enum GameState {
         dir: Direction,
         anim: Option<ExploreAnimation>
     }
+}
+
+pub enum ExploreAnimation {
+    StepBackward(Duration),
+    StepForward(Duration)
 }
 
 impl EventHandler for Game {

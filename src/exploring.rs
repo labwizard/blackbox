@@ -9,8 +9,10 @@ use ::ggez::{
     mint::Point2
 };
 use ::std::time::Duration;
-use crate::*;
-use ExploreAnimation::*;
+use crate::{
+    *,
+    ExploreAnimation::*
+};
 
 pub const VIEWPORT_WIDTH: f32 = 400.0;
 pub const VIEWPORT_HEIGHT: f32 = 300.0;
@@ -45,11 +47,6 @@ pub const FLOOR_BASE_POINTS: &[(f32, f32)] = &[
 ];
 
 pub const STEP_DURATION: Duration = Duration::from_millis(200);
-
-pub enum ExploreAnimation {
-    StepBackward(Duration),
-    StepForward(Duration)
-}
 
 fn viewport_point(dx: f32, dy: f32, dz: f32) -> Point2<f32> {
     let w = INITIAL_WIDTH * HORIZ_VANISH_RATE.powf(dy);
@@ -204,6 +201,36 @@ fn draw_floor_rect(
     draw_rect(ctx, canvas, &points, color, -2)
 }
 
+fn draw_wall(
+    ctx: &mut Context,
+    canvas: &mut Canvas,
+    wall: Wall,
+    x: f32,
+    y: f32,
+    front: bool,
+    anim: &mut Option<ExploreAnimation>
+) -> GameResult {
+    if wall == Wall::Some || wall == Wall::Door {
+        draw_wall_rect(
+            ctx, canvas,
+            WALL_BASE_POINTS,
+            x as f32, y as f32 + 0.5,
+            front,
+            anim
+        )?;
+    }
+    if wall == Wall::Door {
+        draw_wall_rect(
+            ctx, canvas,
+            DOOR_BASE_POINTS,
+            x as f32, y as f32 + 0.5,
+            front,
+            anim
+        )?;
+    }
+    Ok(())
+}
+
 pub fn draw(
     ctx: &mut Context,
     resources: &Resources,
@@ -230,69 +257,33 @@ pub fn draw(
         draw_floor_rect(
             ctx, &mut canvas,
             FLOOR_BASE_POINTS,
-            x as f32, y as f32,
+            x as f32, y as f32 - 0.5,
             0.5,
             anim
         )?;
 
         let wall_pos = pos.translate(*dir, x, y);
-        let front_wall = level.wall_towards(wall_pos, *dir);
-        if front_wall == Wall::Some || front_wall == Wall::Door {
-            draw_wall_rect(
-                ctx, &mut canvas,
-                WALL_BASE_POINTS,
-                x as f32, y as f32 + 0.5,
-                true,
-                anim
-            )?;
-        }
-        if front_wall == Wall::Door {
-            draw_wall_rect(
-                ctx, &mut canvas,
-                DOOR_BASE_POINTS,
-                x as f32, y as f32 + 0.5,
-                true,
-                anim
-            )?;
-        }
-        let left_wall = level.wall_towards(wall_pos, dir.left());
-        if left_wall == Wall::Some || left_wall == Wall::Door {
-            draw_wall_rect(
-                ctx, &mut canvas,
-                WALL_BASE_POINTS,
-                x as f32 - 0.5, y as f32,
-                false,
-                anim
-            )?;
-        }
-        if left_wall == Wall::Door {
-            draw_wall_rect(
-                ctx, &mut canvas,
-                DOOR_BASE_POINTS,
-                x as f32 - 0.5, y as f32,
-                false,
-                anim
-            )?;
-        }
-        let right_wall = level.wall_towards(wall_pos, dir.right());
-        if right_wall == Wall::Some || right_wall == Wall::Door {
-            draw_wall_rect(
-                ctx, &mut canvas,
-                WALL_BASE_POINTS,
-                x as f32 + 0.5, y as f32,
-                false,
-                anim
-            )?;
-        }
-        if right_wall == Wall::Door {
-            draw_wall_rect(
-                ctx, &mut canvas,
-                DOOR_BASE_POINTS,
-                x as f32 + 0.5, y as f32,
-                false,
-                anim
-            )?;
-        }
+        draw_wall(
+            ctx, &mut canvas,
+            level.wall_towards(wall_pos, *dir),
+            x as f32, y as f32 + 0.5,
+            true,
+            anim
+        )?;
+        draw_wall(
+            ctx, &mut canvas,
+            level.wall_towards(wall_pos, dir.left()),
+            x as f32 - 0.5, y as f32,
+            false,
+            anim
+        )?;
+        draw_wall(
+            ctx, &mut canvas,
+            level.wall_towards(wall_pos, dir.right()),
+            x as f32 + 0.5, y as f32,
+            false,
+            anim
+        )?;
     }
     canvas.draw(&resources.game_frame, DrawParam::default());
     canvas.finish(ctx)

@@ -16,7 +16,6 @@ mod level;
 mod position;
 mod resources;
 pub use direction::*;
-pub use exploring::ExploreAnimation;
 pub use game::*;
 pub use level::*;
 pub use position::*;
