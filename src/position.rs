@@ -1,4 +1,3 @@
-use ::std::ops::Add;
 use crate::{
     Direction,
     LEVEL_HEIGHT,
@@ -25,14 +24,6 @@ impl Position {
     /// frame where `dir` is forwards (i.e. positive y).
     pub fn translate(&self, dir: Direction, dx: isize, dy: isize) -> Self {
         self.move_by(dir, dy).move_by(dir.right(), dx)
-    }
-}
-
-impl Add<Direction> for Position {
-    type Output = Position;
-
-    fn add(self, rhs: Direction) -> Self::Output {
-        self.move_by(rhs, 1)
     }
 }
 

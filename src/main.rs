@@ -9,17 +9,23 @@ use ::ggez::{
     event::run
 };
 
+mod character;
 mod direction;
+mod drawing;
 mod exploring;
 mod game;
 mod level;
 mod position;
 mod resources;
+mod viewing_character;
+pub use character::*;
 pub use direction::*;
+pub use drawing::*;
 pub use game::*;
 pub use level::*;
 pub use position::*;
 pub use resources::*;
+pub use viewing_character::*;
 
 pub const TITLE: &str = "blackbox";
 pub const AUTHOR: &str = "Studio Stardust";
@@ -28,7 +34,7 @@ pub const WINDOW_WIDTH: f32 = 640.0;
 pub const WINDOW_HEIGHT: f32 = 480.0;
 
 fn main() -> GameResult {
-    let (ctx, event_loop) = ContextBuilder::new(TITLE, AUTHOR)
+    let (mut ctx, event_loop) = ContextBuilder::new(TITLE, AUTHOR)
         .window_mode(WindowMode {
             width: WINDOW_WIDTH,
             height: WINDOW_HEIGHT,
@@ -40,14 +46,6 @@ fn main() -> GameResult {
             .. WindowSetup::default()
         })
         .build()?;
-    let game = Game {
-        resources: Resources::new(&ctx)?,
-        state: GameState::Exploring {
-            level: Level::example_level(),
-            pos: (0, 0).into(),
-            dir: Direction::South,
-            anim: None
-        }
-    };
+    let game = Game::new(&mut ctx)?;
     run(ctx, event_loop, game);
 }

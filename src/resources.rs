@@ -1,23 +1,29 @@
 use ::ggez::{
+    Context,
     GameResult,
-    context::Has,
-    graphics::{
-        GraphicsContext,
-        Image
-    }
+    graphics::Image
 };
 use ::std::include_bytes;
+use crate::*;
 
-const GAME_FRAME: &[u8] = include_bytes!("../res/img/game_frame.png");
+// images
+const VIEWPORT_MASK: &[u8] = include_bytes!("../res/img/viewport_mask.png");
+
+const FONT_REGULAR: &[u8] = include_bytes!("../res/font/font_regular.png");
+const FONT_BOLD: &[u8] = include_bytes!("../res/font/font_bold.png");
 
 pub struct Resources {
-    pub game_frame: Image
+    pub font_regular: BitmapFont,
+    pub font_bold: BitmapFont,
+    pub viewport_mask: Image
 }
 
 impl Resources {
-    pub fn new(ctx: &impl Has<GraphicsContext>) -> GameResult<Resources> {
+    pub fn new(ctx: &mut Context) -> GameResult<Resources> {
         Ok(Resources {
-            game_frame: Image::from_bytes(ctx, GAME_FRAME)?
+            font_regular: BitmapFont::from_bytes(ctx, FONT_REGULAR, 16, 16)?,
+            font_bold: BitmapFont::from_bytes(ctx, FONT_BOLD, 16, 16)?,
+            viewport_mask: Image::from_bytes(ctx, VIEWPORT_MASK)?
         })
     }
 }

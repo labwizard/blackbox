@@ -5,38 +5,97 @@ use ::ggez::{
     input::keyboard::KeyInput
 };
 use ::std::time::Duration;
-use crate::*;
-use GameState::*;
-
-pub const VIEWPORT_WIDTH: f32 = 400.0;
-pub const VIEWPORT_HEIGHT: f32 = 300.0;
-pub const VIEWPORT_LEFT: f32 = 16.0;
-pub const VIEWPORT_TOP: f32 = 16.0;
-pub const INITIAL_WIDTH: f32 = 400.0;
-pub const INITIAL_HEIGHT: f32 = 300.0;
-pub const HORIZ_VANISH_RATE: f32 = 0.6;
-pub const VERT_VANISH_RATE: f32 = 0.6;
-pub const MAX_VANISH_DIST: isize = 5;
-pub const LINE_WIDTH: f32 = 2.0;
-pub const LINE_VANISH: f32 = 0.8;
+use crate::{
+    *,
+    GameState::*
+};
 
 pub struct Game {
     pub resources: Resources,
-    pub state: GameState
+    pub state: GameState,
+    pub level: Level,
+    pub pos: Position,
+    pub dir: Direction,
+    pub party: Vec<Character>
 }
 
 pub enum GameState {
     Exploring {
-        level: Level,
-        pos: Position,
-        dir: Direction,
-        anim: Option<ExploreAnimation>
+        anim: Option<ExploreAnimation>,
+        selected: Option<usize>
+    },
+    ViewingCharacter {
+        i: usize
     }
 }
 
 pub enum ExploreAnimation {
     StepBackward(Duration),
-    StepForward(Duration)
+    StepForward(Duration),
+    StepLeft(Duration),
+    StepRight(Duration)
+}
+
+impl Game {
+    pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        Ok(Game {
+            resources: Resources::new(ctx)?,
+            state: GameState::Exploring {
+                anim: None,
+                selected: None
+            },
+            level: Level::example_level(),
+            pos: (0, 0).into(),
+            dir: Direction::South,
+            party: vec![
+                Character {
+                    name: "TELLURIUS".to_string(),
+                    class: CharacterClass::Warrior,
+                    lvl: 1,
+                    hp: 9,
+                    max_hp: 9,
+                    mp: 0,
+                    max_mp: 0,
+                    base_atk: 6,
+                    base_def: 5,
+                    base_matk: 0,
+                    base_mdef: 0,
+                    base_agi: 1,
+                    base_luck: 0
+                },
+                Character {
+                    name: "MERCUTIO".to_string(),
+                    class: CharacterClass::Priest,
+                    lvl: 1,
+                    hp: 8,
+                    max_hp: 8,
+                    mp: 4,
+                    max_mp: 4,
+                    base_atk: 4,
+                    base_def: 3,
+                    base_matk: 4,
+                    base_mdef: 3,
+                    base_agi: 2,
+                    base_luck: 0
+                },
+                Character {
+                    name: "LEUTHERIA".to_string(),
+                    class: CharacterClass::Magician,
+                    lvl: 1,
+                    hp: 6,
+                    max_hp: 6,
+                    mp: 7,
+                    max_mp: 7,
+                    base_atk: 1,
+                    base_def: 0,
+                    base_matk: 6,
+                    base_mdef: 5,
+                    base_agi: 3,
+                    base_luck: 1
+                }
+            ]
+        })
+    }
 }
 
 impl EventHandler for Game {
@@ -47,35 +106,28 @@ impl EventHandler for Game {
         repeated: bool,
     ) -> GameResult {
         match &mut self.state {
-            Exploring { level, pos, dir, anim } => {
-                exploring::key_down_event(
-                    ctx, input, repeated,
-                    level, pos, dir, anim
-                )
-            }
+            Exploring { .. }
+                => exploring::key_down_event(ctx, input, repeated, self),
+            ViewingCharacter { .. }
+                => viewing_character::key_down_event(ctx, input, repeated, self)
         }
     }
 
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         match &mut self.state {
-            Exploring { level, pos, dir, anim } => {
-                exploring::update(
-                    ctx,
-                    level, pos, dir, anim
-                )
-            }
+            Exploring { .. }
+                => exploring::update(ctx, self),
+            ViewingCharacter { .. }
+                => viewing_character::update(ctx, self)
         }
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         match &mut self.state {
-            Exploring { level, pos, dir, anim } => {
-                exploring::draw(
-                    ctx,
-                    &self.resources,
-                    level, pos, dir, anim
-                )
-            }
+            Exploring { .. }
+                => exploring::draw(ctx, self),
+            ViewingCharacter { .. }
+                => viewing_character::draw(ctx, self)
         }
     }
 }
