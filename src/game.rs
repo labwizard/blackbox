@@ -4,7 +4,10 @@ use ::ggez::{
     event::EventHandler,
     input::keyboard::KeyInput
 };
-use ::std::time::Duration;
+use ::std::{
+    default::Default,
+    time::Duration
+};
 use crate::{
     *,
     GameState::*
@@ -16,19 +19,28 @@ pub struct Game {
     pub level: Level,
     pub pos: Position,
     pub dir: Direction,
-    pub party: Vec<Character>
+    pub party: Vec<Character>,
+    pub inventory: Vec<Item>
 }
 
 pub enum GameState {
+    Default,
     Exploring {
         anim: Option<ExploreAnimation>,
         selected: Option<usize>
     },
     ViewingCharacter {
-        i: usize
+        i: usize,
+        selected: ItemSlot
+    },
+    ViewingInventory {
+        i: usize,
+        requester: Box<GameState>,
+        condition: Box<dyn Fn(Item, &Game) -> bool>
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum ExploreAnimation {
     StepBackward(Duration),
     StepForward(Duration),
@@ -38,6 +50,12 @@ pub enum ExploreAnimation {
 
 impl Game {
     pub fn new(ctx: &mut Context) -> GameResult<Self> {
+        let mut inventory = Vec::new();
+        for _ in 0..3 {
+            inventory.push(Item::BronzeSword);
+            inventory.push(Item::IronSword);
+            inventory.push(Item::SteelSword);
+        }
         Ok(Game {
             resources: Resources::new(ctx)?,
             state: GameState::Exploring {
@@ -61,7 +79,10 @@ impl Game {
                     base_matk: 0,
                     base_mdef: 0,
                     base_agi: 1,
-                    base_luck: 0
+                    base_luck: 0,
+                    weapon: Some(Item::IronSword),
+                    shield: None,
+                    armor: None
                 },
                 Character {
                     name: "MERCUTIO".to_string(),
@@ -76,7 +97,10 @@ impl Game {
                     base_matk: 4,
                     base_mdef: 3,
                     base_agi: 2,
-                    base_luck: 0
+                    base_luck: 0,
+                    weapon: None,
+                    shield: None,
+                    armor: None
                 },
                 Character {
                     name: "LEUTHERIA".to_string(),
@@ -91,9 +115,13 @@ impl Game {
                     base_matk: 6,
                     base_mdef: 5,
                     base_agi: 3,
-                    base_luck: 1
+                    base_luck: 1,
+                    weapon: None,
+                    shield: None,
+                    armor: None
                 }
-            ]
+            ],
+            inventory
         })
     }
 }
@@ -109,7 +137,11 @@ impl EventHandler for Game {
             Exploring { .. }
                 => exploring::key_down_event(ctx, input, repeated, self),
             ViewingCharacter { .. }
-                => viewing_character::key_down_event(ctx, input, repeated, self)
+                => viewing_character::key_down_event(ctx, input, repeated, self),
+            ViewingInventory { .. }
+                => viewing_inventory::key_down_event(ctx, input, repeated, self),
+            Default
+                => Ok(())
         }
     }
 
@@ -118,16 +150,30 @@ impl EventHandler for Game {
             Exploring { .. }
                 => exploring::update(ctx, self),
             ViewingCharacter { .. }
-                => viewing_character::update(ctx, self)
+                => viewing_character::update(ctx, self),
+            ViewingInventory { .. }
+                => viewing_inventory::update(ctx, self),
+            Default
+                => Ok(())
         }
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         match &mut self.state {
             Exploring { .. }
-                => exploring::draw(ctx, self),
+                => exploring::draw(ctx, &*self),
             ViewingCharacter { .. }
-                => viewing_character::draw(ctx, self)
+                => viewing_character::draw(ctx, &*self),
+            &mut ViewingInventory { .. }
+                => viewing_inventory::draw(ctx, &*self),
+            Default
+                => Ok(())
         }
+    }
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameState::Default
     }
 }

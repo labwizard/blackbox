@@ -6,7 +6,8 @@ use ::ggez::{
         WindowMode,
         WindowSetup
     },
-    event::run
+    event::run,
+    graphics::Color
 };
 
 mod character;
@@ -14,24 +15,29 @@ mod direction;
 mod drawing;
 mod exploring;
 mod game;
+mod item;
 mod level;
 mod position;
 mod resources;
 mod viewing_character;
+mod viewing_inventory;
 pub use character::*;
 pub use direction::*;
 pub use drawing::*;
 pub use game::*;
+pub use item::*;
 pub use level::*;
 pub use position::*;
 pub use resources::*;
-pub use viewing_character::*;
+pub use viewing_inventory::no_condition;
 
 pub const TITLE: &str = "blackbox";
 pub const AUTHOR: &str = "Studio Stardust";
 
 pub const WINDOW_WIDTH: f32 = 640.0;
 pub const WINDOW_HEIGHT: f32 = 480.0;
+
+pub const GRAY: Color = Color::new(0.5, 0.5, 0.5, 1.0);
 
 fn main() -> GameResult {
     let (mut ctx, event_loop) = ContextBuilder::new(TITLE, AUTHOR)

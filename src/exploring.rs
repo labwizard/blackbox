@@ -12,7 +12,8 @@ use ::std::time::Duration;
 use crate::{
     *,
     ExploreAnimation::*,
-    GameState::*
+    GameState::*,
+    ItemSlot::Weapon
 };
 
 pub const VIEWPORT_LEFT: f32 = 16.0;
@@ -20,7 +21,7 @@ pub const VIEWPORT_TOP: f32 = 16.0;
 pub const VIEWPORT_WIDTH: f32 = 400.0;
 pub const VIEWPORT_HEIGHT: f32 = 300.0;
 pub const VIEWPORT_RIGHT: f32 = VIEWPORT_LEFT + VIEWPORT_WIDTH;
-// pub const VIEWPORT_BOTTOM: f32 = VIEWPORT_TOP + VIEWPORT_HEIGHT;
+pub const VIEWPORT_BOTTOM: f32 = VIEWPORT_TOP + VIEWPORT_HEIGHT;
 
 pub const INITIAL_WIDTH: f32 = VIEWPORT_WIDTH;
 pub const INITIAL_HEIGHT: f32 = VIEWPORT_HEIGHT;
@@ -101,8 +102,10 @@ pub fn key_down_event(
     finish_anim(pos, dir, anim)?;
     if let Some(i) = selected.as_mut() {
         match input.keycode {
-            Some(KeyCode::Return)
-                => game.state = ViewingCharacter { i: *i },
+            Some(KeyCode::Return) => game.state = ViewingCharacter {
+                i: *i,
+                selected: Weapon
+            },
             Some(KeyCode::Escape)
                 => *selected = None,
             Some(KeyCode::Up)
@@ -135,6 +138,13 @@ pub fn key_down_event(
                 }
             },
             Some(KeyCode::P) => *selected = Some(0),
+            Some(KeyCode::I) => {
+                game.state = GameState::ViewingInventory {
+                    i: 0,
+                    requester: Box::new(::std::mem::take(&mut game.state)),
+                    condition: Box::new(|_, _| true)
+                };
+            }
             Some(KeyCode::Down) => *dir = dir.rev(),
             Some(KeyCode::Left) => *dir = dir.left(),
             Some(KeyCode::Right) => *dir = dir.right(),
@@ -198,7 +208,7 @@ fn draw_wall_rect(
     x: f32,
     y: f32,
     front: bool,
-    anim: &mut Option<ExploreAnimation>
+    anim: &Option<ExploreAnimation>
 ) -> GameResult {
     let intensity = INTENSITY_VANISH.powi(y as i32);
     let color = Color::new(intensity, intensity, intensity, 1.0);
@@ -228,7 +238,7 @@ fn draw_floor_rect(
     x: f32,
     y: f32,
     dz: f32,
-    anim: &mut Option<ExploreAnimation>
+    anim: &Option<ExploreAnimation>
 ) -> GameResult {
     let intensity = FLOOR_INTENSITY * INTENSITY_VANISH.powi(y as i32);
     let color = Color::new(intensity, intensity, intensity, 1.0);
@@ -252,7 +262,7 @@ fn draw_wall(
     x: f32,
     y: f32,
     front: bool,
-    anim: &mut Option<ExploreAnimation>
+    anim: &Option<ExploreAnimation>
 ) -> GameResult {
     let dx = x;
     let dy = y as f32 + 0.5;
@@ -269,10 +279,10 @@ pub fn draw_viewport(
     ctx: &mut Context,
     canvas: &mut Canvas,
     resources: &Resources,
-    level: &mut Level,
-    pos: &mut Position,
-    dir: &mut Direction,
-    anim: &mut Option<ExploreAnimation>
+    level: &Level,
+    pos: &Position,
+    dir: &Direction,
+    anim: &Option<ExploreAnimation>
 ) -> GameResult {
     let mut render_points = Vec::new();
     for x in (-MAX_VANISH_DIST)..=MAX_VANISH_DIST {
@@ -326,8 +336,8 @@ pub fn draw_partylist(
     ctx: &mut Context,
     canvas: &mut Canvas,
     resources: &Resources,
-    party: &mut Vec<Character>,
-    _anim: &mut Option<ExploreAnimation>,
+    party: &Vec<Character>,
+    _anim: &Option<ExploreAnimation>,
     selected: Option<usize>
 ) -> GameResult {
     draw_rect(
@@ -417,8 +427,8 @@ pub fn draw_controls(
     Ok(())
 }
 
-pub fn draw(ctx: &mut Context, game: &mut Game) -> GameResult {
-    let (anim, selected) = match &mut game.state {
+pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
+    let (anim, selected) = match &game.state {
         Exploring { anim, selected }
             => (anim, selected),
         _   => unimplemented!()
@@ -430,13 +440,13 @@ pub fn draw(ctx: &mut Context, game: &mut Game) -> GameResult {
     draw_viewport(
         ctx, &mut canvas,
         &game.resources,
-        &mut game.level, &mut game.pos, &mut game.dir,
+        &game.level, &game.pos, &game.dir,
         anim
     )?;
     draw_partylist(
         ctx, &mut canvas,
         &game.resources,
-        &mut game.party,
+        &game.party,
         anim,
         *selected
     )?;
@@ -451,7 +461,7 @@ pub fn draw(ctx: &mut Context, game: &mut Game) -> GameResult {
         draw_controls(
             ctx, &mut canvas,
             &game.resources,
-            &[("[P]", "PARTY")]
+            &[("[P]", "PARTY"), ("[I]", "ITEMS")]
         )?;
     }
 
