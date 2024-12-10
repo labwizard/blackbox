@@ -2,7 +2,6 @@ use ::ggez::{
     Context,
     GameResult,
     graphics::*,
-    mint::Point2,
     input::keyboard::{
         KeyCode,
         KeyInput
@@ -15,12 +14,12 @@ use crate::{
     exploring::*
 };
 
-pub const CHAR_DETAILS_RECT_POINTS: &[Point2<f32>] = &[
-    Point2 { x: VIEWPORT_LEFT - 1.0, y: VIEWPORT_TOP - 1.0 },
-    Point2 { x: VIEWPORT_RIGHT + 1.0, y: VIEWPORT_TOP - 1.0 },
-    Point2 { x: VIEWPORT_RIGHT + 1.0, y: PARTYLIST_BOTTOM + 1.0, },
-    Point2 { x: VIEWPORT_LEFT - 1.0, y: PARTYLIST_BOTTOM + 1.0, }
-];
+pub const CHAR_DETAILS_BORDER_RECT: Rect = Rect {
+    x: VIEWPORT_LEFT - 1.0,
+    y: VIEWPORT_TOP - 1.0,
+    w: VIEWPORT_WIDTH + 2.0,
+    h: (PARTYLIST_BOTTOM - VIEWPORT_TOP) + 2.0
+};
 pub const SLOTS: &[ItemSlot] = &[
     Weapon,
     Shield,
@@ -91,7 +90,7 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
 
     draw_rect(
         ctx, &mut canvas,
-        CHAR_DETAILS_RECT_POINTS,
+        &rect_points(CHAR_DETAILS_BORDER_RECT),
         Color::WHITE,
         Color::BLACK
     )?;

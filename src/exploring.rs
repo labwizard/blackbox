@@ -20,8 +20,14 @@ pub const VIEWPORT_LEFT: f32 = 16.0;
 pub const VIEWPORT_TOP: f32 = 16.0;
 pub const VIEWPORT_WIDTH: f32 = 400.0;
 pub const VIEWPORT_HEIGHT: f32 = 300.0;
-pub const VIEWPORT_RIGHT: f32 = VIEWPORT_LEFT + VIEWPORT_WIDTH;
-pub const VIEWPORT_BOTTOM: f32 = VIEWPORT_TOP + VIEWPORT_HEIGHT;
+// pub const VIEWPORT_RIGHT: f32 = VIEWPORT_LEFT + VIEWPORT_WIDTH;
+// pub const VIEWPORT_BOTTOM: f32 = VIEWPORT_TOP + VIEWPORT_HEIGHT;
+pub const VIEWPORT_BORDER_RECT: Rect = Rect {
+    x: VIEWPORT_LEFT - 1.0,
+    y: VIEWPORT_TOP - 1.0,
+    w: VIEWPORT_WIDTH + 2.0,
+    h: VIEWPORT_HEIGHT + 2.0
+};
 
 pub const INITIAL_WIDTH: f32 = VIEWPORT_WIDTH;
 pub const INITIAL_HEIGHT: f32 = VIEWPORT_HEIGHT;
@@ -37,25 +43,25 @@ pub const PARTYLIST_WIDTH: f32 = VIEWPORT_WIDTH;
 pub const PARTYLIST_HEIGHT: f32 = 128.0;
 pub const PARTYLIST_RIGHT: f32 = PARTYLIST_LEFT + PARTYLIST_WIDTH;
 pub const PARTYLIST_BOTTOM: f32 = PARTYLIST_TOP + PARTYLIST_HEIGHT;
-pub const PARTYLIST_RECT_POINTS: &[Point2<f32>] = &[
-    Point2 { x: PARTYLIST_LEFT - 1.0, y: PARTYLIST_TOP - 1.0 },
-    Point2 { x: PARTYLIST_RIGHT + 1.0, y: PARTYLIST_TOP - 1.0 },
-    Point2 { x: PARTYLIST_RIGHT + 1.0, y: PARTYLIST_BOTTOM + 1.0, },
-    Point2 { x: PARTYLIST_LEFT - 1.0, y: PARTYLIST_BOTTOM + 1.0, }
-];
+pub const PARTYLIST_BORDER_RECT: Rect = Rect {
+    x: PARTYLIST_LEFT - 1.0,
+    y: PARTYLIST_TOP - 1.0,
+    w: PARTYLIST_WIDTH + 2.0,
+    h: PARTYLIST_HEIGHT + 2.0
+};
 
 pub const CONTROLS_LEFT: f32 = 432.0;
 pub const CONTROLS_TOP: f32 = PARTYLIST_TOP;
 pub const CONTROLS_WIDTH: f32 = 192.0;
 pub const CONTROLS_HEIGHT: f32 = PARTYLIST_HEIGHT;
-pub const CONTROLS_RIGHT: f32 = CONTROLS_LEFT + CONTROLS_WIDTH;
-pub const CONTROLS_BOTTOM: f32 = CONTROLS_TOP + CONTROLS_HEIGHT;
-pub const CONTROLS_RECT_POINTS: &[Point2<f32>] = &[
-    Point2 { x: CONTROLS_LEFT - 1.0, y: CONTROLS_TOP - 1.0 },
-    Point2 { x: CONTROLS_RIGHT + 1.0, y: CONTROLS_TOP - 1.0 },
-    Point2 { x: CONTROLS_RIGHT + 1.0, y: CONTROLS_BOTTOM + 1.0, },
-    Point2 { x: CONTROLS_LEFT - 1.0, y: CONTROLS_BOTTOM + 1.0, }
-];
+// pub const CONTROLS_RIGHT: f32 = CONTROLS_LEFT + CONTROLS_WIDTH;
+// pub const CONTROLS_BOTTOM: f32 = CONTROLS_TOP + CONTROLS_HEIGHT;
+pub const CONTROLS_BORDER_RECT: Rect = Rect {
+    x: CONTROLS_LEFT - 1.0,
+    y: CONTROLS_TOP - 1.0,
+    w: CONTROLS_WIDTH + 2.0,
+    h: CONTROLS_HEIGHT + 2.0
+};
 
 pub const WALL_BASE_POINTS: &[(f32, f32)] = &[
     (0.5, 0.5),
@@ -278,7 +284,6 @@ fn draw_wall(
 pub fn draw_viewport(
     ctx: &mut Context,
     canvas: &mut Canvas,
-    resources: &Resources,
     level: &Level,
     pos: &Position,
     dir: &Direction,
@@ -328,7 +333,19 @@ pub fn draw_viewport(
         )?;
     }
 
-    canvas.draw(&resources.viewport_mask, DrawParam::default());
+    draw_rect(
+        ctx, canvas,
+        &rect_points(VIEWPORT_BORDER_RECT),
+        Color::WHITE, TRANSPARENT
+    )?;
+    for rect_points in complement_rects_points(VIEWPORT_BORDER_RECT) {
+        draw_rect(
+            ctx, canvas,
+            &rect_points,
+            TRANSPARENT, Color::BLACK
+        )?;
+    }
+
     Ok(())
 }
 
@@ -342,7 +359,7 @@ pub fn draw_partylist(
 ) -> GameResult {
     draw_rect(
         ctx, canvas,
-        PARTYLIST_RECT_POINTS,
+        &rect_points(PARTYLIST_BORDER_RECT),
         Color::WHITE,
         Color::BLACK
     )?;
@@ -400,7 +417,7 @@ pub fn draw_controls(
 ) -> GameResult {
     draw_rect(
         ctx, canvas,
-        CONTROLS_RECT_POINTS,
+        &rect_points(CONTROLS_BORDER_RECT),
         Color::WHITE,
         Color::BLACK
     )?;
@@ -439,7 +456,6 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
 
     draw_viewport(
         ctx, &mut canvas,
-        &game.resources,
         &game.level, &game.pos, &game.dir,
         anim
     )?;

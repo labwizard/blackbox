@@ -29,7 +29,6 @@ pub use item::*;
 pub use level::*;
 pub use position::*;
 pub use resources::*;
-pub use viewing_inventory::no_condition;
 
 pub const TITLE: &str = "blackbox";
 pub const AUTHOR: &str = "Studio Stardust";
@@ -38,6 +37,7 @@ pub const WINDOW_WIDTH: f32 = 640.0;
 pub const WINDOW_HEIGHT: f32 = 480.0;
 
 pub const GRAY: Color = Color::new(0.5, 0.5, 0.5, 1.0);
+pub const TRANSPARENT: Color = Color::new(0.0, 0.0, 0.0, 0.0);
 
 fn main() -> GameResult {
     let (mut ctx, event_loop) = ContextBuilder::new(TITLE, AUTHOR)
@@ -45,6 +45,7 @@ fn main() -> GameResult {
             width: WINDOW_WIDTH,
             height: WINDOW_HEIGHT,
             fullscreen_type: Windowed,
+            resizable: false,
             .. WindowMode::default()
         })
         .window_setup(WindowSetup {

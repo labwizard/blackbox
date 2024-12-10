@@ -2,7 +2,6 @@ use ::ggez::{
     Context,
     GameResult,
     graphics::*,
-    mint::Point2,
     input::keyboard::{
         KeyCode,
         KeyInput
@@ -14,23 +13,19 @@ use crate::{
     exploring::*
 };
 
-pub const INVENTORY_RECT_POINTS: &[Point2<f32>] = &[
-    Point2 { x: VIEWPORT_LEFT - 1.0, y: VIEWPORT_TOP - 1.0 },
-    Point2 { x: PARTYLIST_RIGHT + 1.0, y: VIEWPORT_TOP - 1.0 },
-    Point2 { x: PARTYLIST_RIGHT + 1.0, y: VIEWPORT_BOTTOM + 1.0, },
-    Point2 { x: VIEWPORT_LEFT - 1.0, y: VIEWPORT_BOTTOM + 1.0, }
-];
-pub const ITEM_DETAILS_RECT_POINTS: &[Point2<f32>] = &[
-    Point2 { x: VIEWPORT_LEFT - 1.0, y: PARTYLIST_TOP - 1.0 },
-    Point2 { x: PARTYLIST_RIGHT + 1.0, y: PARTYLIST_TOP - 1.0 },
-    Point2 { x: PARTYLIST_RIGHT + 1.0, y: PARTYLIST_BOTTOM + 1.0, },
-    Point2 { x: VIEWPORT_LEFT - 1.0, y: PARTYLIST_BOTTOM + 1.0, }
-];
+pub const INVENTORY_BORDER_RECT: Rect = Rect {
+    x: VIEWPORT_LEFT - 1.0,
+    y: VIEWPORT_TOP - 1.0,
+    w: (PARTYLIST_RIGHT - VIEWPORT_LEFT) + 2.0,
+    h: VIEWPORT_HEIGHT + 2.0
+};
+pub const ITEM_DETAILS_BORDER_RECT: Rect = Rect {
+    x: VIEWPORT_LEFT - 1.0,
+    y: PARTYLIST_TOP - 1.0,
+    w: (PARTYLIST_RIGHT - VIEWPORT_LEFT) + 2.0,
+    h: PARTYLIST_HEIGHT + 2.0
+};
 pub const ITEMS_PER_SCREEN: usize = 17;
-
-pub fn no_condition(_item: Item) -> bool {
-    true
-}
 
 fn answer_request(
     game: &mut Game,
@@ -121,7 +116,7 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
 
     draw_rect(
         ctx, &mut canvas,
-        INVENTORY_RECT_POINTS,
+        &rect_points(INVENTORY_BORDER_RECT),
         Color::WHITE,
         Color::BLACK
     )?;
@@ -156,7 +151,7 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
 
     draw_rect(
         ctx, &mut canvas,
-        ITEM_DETAILS_RECT_POINTS,
+        &rect_points(ITEM_DETAILS_BORDER_RECT),
         Color::WHITE,
         Color::BLACK
     )?;
