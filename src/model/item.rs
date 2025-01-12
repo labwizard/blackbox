@@ -1,9 +1,9 @@
-use crate::{
+use crate::model::{
     *,
     CharacterClass::*,
+    Item::*,
+    ItemSlot::*
 };
-use Item::*;
-use ItemSlot::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Item {
@@ -11,14 +11,6 @@ pub enum Item {
     IronSword,
     SteelSword
 }
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ItemSlot {
-    Weapon,
-    Shield,
-    Armor
-}
-
 
 impl Item {
     pub fn name(&self) -> &'static str {
@@ -29,7 +21,7 @@ impl Item {
         }
     }
 
-    pub fn equippable_to(&self, by: &Character, slot: ItemSlot) -> bool {
+    pub fn equippable(&self, by: &Character, slot: ItemSlot) -> bool {
         match self {
             BronzeSword | IronSword | SteelSword
                 => by.class == Warrior && slot == Weapon

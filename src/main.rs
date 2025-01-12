@@ -10,24 +10,13 @@ use ::ggez::{
     graphics::Color
 };
 
-mod character;
-mod direction;
-mod drawing;
-mod exploring;
+pub mod drawing;
 mod game;
-mod item;
-mod level;
-mod position;
+pub mod model;
 mod resources;
-mod viewing_character;
-mod viewing_inventory;
-pub use character::*;
-pub use direction::*;
-pub use drawing::*;
+pub mod scene;
+
 pub use game::*;
-pub use item::*;
-pub use level::*;
-pub use position::*;
 pub use resources::*;
 
 pub const TITLE: &str = "blackbox";

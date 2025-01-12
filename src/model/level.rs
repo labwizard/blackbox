@@ -1,12 +1,12 @@
-use crate::{
-    Direction::{self, *},
-    Position
+use crate::model::{
+    *,
+    Direction::*
 };
 
 pub const LEVEL_WIDTH: usize = 20;
 pub const LEVEL_HEIGHT: usize = 20;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Level {
     pub horiz_walls: [[Wall; LEVEL_HEIGHT + 1]; LEVEL_WIDTH],
     pub vert_walls: [[Wall; LEVEL_HEIGHT]; LEVEL_WIDTH + 1]

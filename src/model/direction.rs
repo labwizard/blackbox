@@ -1,4 +1,4 @@
-use Direction::*;
+use crate::model::Direction::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Direction {

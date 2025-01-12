@@ -1,9 +1,6 @@
-use ::ggez::{
-    Context,
-    GameResult
-};
+use ::ggez::*;
 use ::std::include_bytes;
-use crate::*;
+use crate::drawing::*;
 
 const FONT_REGULAR: &[u8] = include_bytes!("../res/font/font_regular.png");
 const FONT_BOLD: &[u8] = include_bytes!("../res/font/font_bold.png");

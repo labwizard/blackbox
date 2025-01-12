@@ -1,18 +1,27 @@
 use ::ggez::{
-    Context,
-    GameResult,
+    *,
     graphics::*,
-    input::keyboard::{
-        KeyCode,
-        KeyInput
-    }
+    input::keyboard::*
 };
+use ::std::mem::take;
 use crate::{
     *,
-    GameState::*,
-    ItemSlot::*,
-    exploring::*
+    drawing::*,
+    model::{
+        *,
+        ItemSlot::*
+    },
+    scene::{
+        *,
+        explore::*
+    }
 };
+
+#[derive(Clone, Debug)]
+pub struct ViewCharacterScene {
+    pub i: usize,
+    pub selected: ItemSlot
+}
 
 pub const CHAR_DETAILS_BORDER_RECT: Rect = Rect {
     x: VIEWPORT_LEFT - 1.0,
@@ -20,6 +29,7 @@ pub const CHAR_DETAILS_BORDER_RECT: Rect = Rect {
     w: VIEWPORT_WIDTH + 2.0,
     h: (PARTYLIST_BOTTOM - VIEWPORT_TOP) + 2.0
 };
+
 pub const SLOTS: &[ItemSlot] = &[
     Weapon,
     Shield,
@@ -31,39 +41,46 @@ pub const SLOT_LABELS: &[&'static str] = &[
     "ARMOR"
 ];
 
+fn expect_view_character(scene: &Scene) -> &ViewCharacterScene {
+    match scene {
+        Scene::ViewCharacter(view_char_scene) => view_char_scene,
+        _ => unimplemented!()
+    }
+}
+fn expect_view_character_mut(scene: &mut Scene) -> &mut ViewCharacterScene {
+    match scene {
+        Scene::ViewCharacter(view_char_scene) => view_char_scene,
+        _ => unimplemented!()
+    }
+}
+
 pub fn key_down_event(
     _ctx: &mut Context,
     input: KeyInput,
     _repeated: bool,
     game: &mut Game
 ) -> GameResult {
-    let (i, selected) = match &mut game.state {
-        ViewingCharacter { i, selected }
-            => (i, selected),
-        _   => unimplemented!()
-    };
+    let scene = expect_view_character_mut(&mut game.scene);
     match input.keycode {
-        Some(KeyCode::Escape)
-            => game.state = Exploring { anim: None, selected: Some(*i) },
+        Some(KeyCode::Escape) => {
+            game.scene = Scene::Explore(ExploreScene {
+                anim: None,
+                selected: Some(scene.i)
+            });
+        },
         Some(KeyCode::Return) => {
-            let (i, selected) = (*i, *selected);
-            game.state = ViewingInventory {
+            game.scene = Scene::ViewInventory(ViewInventoryScene {
                 i: 0,
-                requester: Box::new(::std::mem::take(&mut game.state)),
-                condition: Box::new(move |item, game| {
-                    game.party.get(i).map_or(
-                        false,
-                        |character| item.equippable_to(character, selected)
-                    )
-                })
-            };
+                pred: ItemPredicate::Equippable(scene.i, scene.selected),
+                parent: Box::new(take(&mut game.scene))
+            });
         }
-        Some(KeyCode::Up) => *selected = match selected {
+        Some(KeyCode::Up) => scene.selected = match scene.selected {
             Weapon => Armor,
             Shield => Weapon,
             Armor => Shield
         },
-        Some(KeyCode::Down) => *selected = match selected {
+        Some(KeyCode::Down) => scene.selected = match scene.selected {
             Weapon => Shield,
             Shield => Armor,
             Armor => Weapon
@@ -79,12 +96,8 @@ pub fn update(_ctx: &mut Context, _game: &mut Game) -> GameResult {
 
 
 pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
-    let (i, selected) = match &game.state {
-        ViewingCharacter { i, selected }
-            => (i, selected),
-        _   => unimplemented!()
-    };
-
+    let (state, scene) = (&game.state, expect_view_character(&game.scene));
+    // set up canvas
     let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
     canvas.set_sampler(Sampler::nearest_clamp());
 
@@ -95,7 +108,8 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
         Color::BLACK
     )?;
 
-    if let Some(character) = game.party.get(*i) {
+    // draw character stats
+    if let Some(character) = state.party.get(scene.i) {
         draw_bitmap_text(
             &mut canvas,
             &character.name,
@@ -182,7 +196,7 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
                 Color::WHITE,
                 136.0, y
             );
-            if slot == selected {
+            if *slot == scene.selected {
                 draw_bitmap_text(
                     &mut canvas,
                     "<",
@@ -193,6 +207,7 @@ pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
             }
         }
     }
+    // draw control panel
     draw_controls(
         ctx, &mut canvas,
         &game.resources,

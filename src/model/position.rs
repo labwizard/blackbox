@@ -1,8 +1,4 @@
-use crate::{
-    Direction,
-    LEVEL_HEIGHT,
-    LEVEL_WIDTH,
-};
+use crate::model::*;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Position {

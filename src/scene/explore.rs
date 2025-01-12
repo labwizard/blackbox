@@ -1,20 +1,36 @@
 use ::ggez::{
-    Context,
-    GameResult,
+    *,
     graphics::*,
-    input::keyboard::{
-        KeyCode,
-        KeyInput
-    },
+    input::keyboard::*,
     mint::Point2
 };
-use ::std::time::Duration;
+use ::std::{
+    mem::take,
+    time::Duration
+};
 use crate::{
     *,
-    ExploreAnimation::*,
-    GameState::*,
-    ItemSlot::Weapon
+    drawing::*,
+    model::*,
+    scene::{
+        *,
+        explore::ExploreAnimation::*
+    }
 };
+
+#[derive(Clone, Debug)]
+pub struct ExploreScene {
+    pub anim: Option<ExploreAnimation>,
+    pub selected: Option<usize>
+}
+
+#[derive(Clone, Debug)]
+pub enum ExploreAnimation {
+    StepBackward(Duration),
+    StepForward(Duration),
+    StepLeft(Duration),
+    StepRight(Duration)
+}
 
 pub const VIEWPORT_LEFT: f32 = 16.0;
 pub const VIEWPORT_TOP: f32 = 16.0;
@@ -84,6 +100,19 @@ pub const FLOOR_BASE_POINTS: &[(f32, f32)] = &[
 
 pub const STEP_DURATION: Duration = Duration::from_millis(200);
 
+fn expect_explore(scene: &Scene) -> &ExploreScene {
+    match scene {
+        Scene::Explore(explore_scene) => explore_scene,
+        _ => unimplemented!()
+    }
+}
+fn expect_explore_mut(scene: &mut Scene) -> &mut ExploreScene {
+    match scene {
+        Scene::Explore(explore_scene) => explore_scene,
+        _ => unimplemented!()
+    }
+}
+
 fn viewport_point(dx: f32, dy: f32, dz: f32) -> Point2<f32> {
     let w = INITIAL_WIDTH * HORIZ_VANISH_RATE.powf(dy);
     let h = INITIAL_HEIGHT * VERT_VANISH_RATE.powf(dy);
@@ -99,61 +128,57 @@ pub fn key_down_event(
     _repeated: bool,
     game: &mut Game
 ) -> GameResult {
-    let (anim, selected) = match &mut game.state {
-        Exploring { anim, selected }
-            => (anim, selected),
-        _   => unimplemented!()
-    };
-    let (level, pos, dir) = (&mut game.level, &mut game.pos, &mut game.dir);
-    finish_anim(pos, dir, anim)?;
-    if let Some(i) = selected.as_mut() {
+    let (state, scene) = (&mut game.state, expect_explore_mut(&mut game.scene));
+    if let Some(i) = scene.selected.as_mut() {
         match input.keycode {
-            Some(KeyCode::Return) => game.state = ViewingCharacter {
-                i: *i,
-                selected: Weapon
-            },
+            Some(KeyCode::Return) => {
+                game.scene = Scene::ViewCharacter(ViewCharacterScene {
+                    i: *i,
+                    selected: ItemSlot::Weapon
+                });
+            }
             Some(KeyCode::Escape)
-                => *selected = None,
+                => scene.selected = None,
             Some(KeyCode::Up)
-                => *i = (*i + game.party.len() - 1) % game.party.len(),
+                => *i = (*i + state.party.len() - 1) % state.party.len(),
             Some(KeyCode::Down)
-                => *i = (*i + 1) % game.party.len(),
+                => *i = (*i + 1) % state.party.len(),
             _   => {}
         }
     } else {
         match input.keycode {
             Some(KeyCode::Up | KeyCode::W) => {
-                if level.wall_towards(*pos, *dir).is_passable() {
-                    *anim = Some(StepForward(STEP_DURATION));
+                if state.level.wall_towards(state.pos, state.dir).is_passable() {
+                    scene.anim = Some(StepForward(STEP_DURATION));
                 }
             },
             Some(KeyCode::S) => {
-                if level.wall_towards(*pos, dir.rev()).is_passable() {
-                    *pos = pos.move_by(*dir, -1);
-                    *anim = Some(StepBackward(STEP_DURATION));
+                if state.level.wall_towards(state.pos, state.dir.rev()).is_passable() {
+                    state.pos = state.pos.move_by(state.dir, -1);
+                    scene.anim = Some(StepBackward(STEP_DURATION));
                 }
             },
             Some(KeyCode::A) => {
-                if level.wall_towards(*pos, dir.left()).is_passable() {
-                    *anim = Some(StepLeft(STEP_DURATION));
+                if state.level.wall_towards(state.pos, state.dir.left()).is_passable() {
+                    scene.anim = Some(StepLeft(STEP_DURATION));
                 }
             },
             Some(KeyCode::D) => {
-                if level.wall_towards(*pos, dir.right()).is_passable() {
-                    *anim = Some(StepRight(STEP_DURATION));
+                if state.level.wall_towards(state.pos, state.dir.right()).is_passable() {
+                    scene.anim = Some(StepRight(STEP_DURATION));
                 }
             },
-            Some(KeyCode::P) => *selected = Some(0),
+            Some(KeyCode::P) => scene.selected = Some(0),
             Some(KeyCode::I) => {
-                game.state = GameState::ViewingInventory {
+                game.scene = Scene::ViewInventory(ViewInventoryScene {
                     i: 0,
-                    requester: Box::new(::std::mem::take(&mut game.state)),
-                    condition: Box::new(|_, _| true)
-                };
+                    parent: Box::new(take(&mut game.scene)),
+                    pred: ItemPredicate::Usable
+                });
             }
-            Some(KeyCode::Down) => *dir = dir.rev(),
-            Some(KeyCode::Left) => *dir = dir.left(),
-            Some(KeyCode::Right) => *dir = dir.right(),
+            Some(KeyCode::Down) => state.dir = state.dir.rev(),
+            Some(KeyCode::Left) => state.dir = state.dir.left(),
+            Some(KeyCode::Right) => state.dir = state.dir.right(),
             _ => {}
         }
     }
@@ -183,13 +208,9 @@ fn finish_anim(
 }
 
 pub fn update(ctx: &mut Context, game: &mut Game) -> GameResult {
-    let anim = match &mut game.state {
-        Exploring { anim, .. }
-            => anim,
-        _   => unimplemented!()
-    };
-    let (pos, dir) = (&mut game.pos, &mut game.dir);
-    match anim {
+    let (state, scene) = (&mut game.state, expect_explore_mut(&mut game.scene));
+
+    match &mut scene.anim {
         Some(
             StepBackward(dur)
             | StepForward(dur)
@@ -197,7 +218,7 @@ pub fn update(ctx: &mut Context, game: &mut Game) -> GameResult {
             | StepRight(dur)
         ) => {
             if ctx.time.delta() >= *dur {
-                finish_anim(pos, dir, anim)?;
+                finish_anim(&mut state.pos, &mut state.dir, &mut scene.anim)?;
             } else {
                 *dur -= ctx.time.delta();
             }
@@ -445,29 +466,26 @@ pub fn draw_controls(
 }
 
 pub fn draw(ctx: &mut Context, game: &Game) -> GameResult {
-    let (anim, selected) = match &game.state {
-        Exploring { anim, selected }
-            => (anim, selected),
-        _   => unimplemented!()
-    };
-
+    let (state, scene) = (&game.state, expect_explore(&game.scene));
+    // set up canvas
     let mut canvas = Canvas::from_frame(ctx, Color::BLACK);
     canvas.set_sampler(Sampler::nearest_clamp());
 
     draw_viewport(
         ctx, &mut canvas,
-        &game.level, &game.pos, &game.dir,
-        anim
+        &state.level, &state.pos, &state.dir,
+        &scene.anim
     )?;
+
     draw_partylist(
         ctx, &mut canvas,
         &game.resources,
-        &game.party,
-        anim,
-        *selected
+        &state.party,
+        &scene.anim,
+        scene.selected
     )?;
-
-    if selected.is_some() {
+    // draw control panel
+    if scene.selected.is_some() {
         draw_controls(
             ctx, &mut canvas,
             &game.resources,
